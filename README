@@ -1,0 +1,4 @@
+An optimized Image batch class for Starling.
+
+Currently limited: one texture, no animation, no rotation.
+
