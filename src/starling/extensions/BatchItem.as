@@ -1,0 +1,47 @@
+package starling.extensions 
+{
+	/**
+	 * ...
+	 * @author Philippe / http://philippe.elsass.me
+	 */
+	public class BatchItem 
+	{
+		public var x:Number;
+		public var y:Number;
+		public var scale:Number;
+		public var dirty:Boolean;
+		private var _alpha:Number;
+		private var _color:Number;
+		
+		public function BatchItem() 
+		{
+			x = y = 0;
+			scale = alpha = 1;
+			color = 0xffffff;
+		}
+		
+		public function get alpha():Number { return _alpha; }
+		
+		public function set alpha(value:Number):void 
+		{
+			if (_alpha != value) 
+			{
+				_alpha = value;
+				dirty = true;
+			}
+		}
+		
+		public function get color():Number { return _color; }
+		
+		public function set color(value:Number):void 
+		{
+			if (_color != value)
+			{
+				_color = value;
+				dirty = true;
+			}
+		}
+		
+	}
+
+}
