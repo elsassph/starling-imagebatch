@@ -18,15 +18,20 @@ package starling.extensions
 	import starling.utils.VertexData;
 	
 	/**
-	 * ...
+	 * Animate a lot of elements as one batched call to the GPU.
+	 *
 	 * @author Philippe / http://philippe.elsass.me
 	 */
 	public class ImageBatch extends DisplayObject 
 	{
+		public var blendFactorSource:String;
+		public var blendFactorDest:String;
+
 		private var _count:int;
 		private var _drawCount:int;
 		private var _texture:Texture;
 		private var _items:Vector.<BatchItem>;
+
 		private var vertexData:VertexData;
 		private var indices:Vector.<uint>;
 		private var vertexBuffer:VertexBuffer3D;
@@ -34,8 +39,6 @@ package starling.extensions
 		private var premultipliedAlpha:Boolean;
 		private var baseVertexData:VertexData;
 		private var alphaVector:Vector.<Number>;
-		private var blendFactorSource:String;
-		private var blendFactorDest:String;
 		
 		public function ImageBatch(texture:Texture, blendFactorSource:String = null, blendFactorDest:String = null)
 		{
@@ -201,11 +204,13 @@ package starling.extensions
             baseVertexData.setTexCoords(3, 1.0, 1.0);
             baseVertexData = value.adjustVertexData(baseVertexData);
 		}
-		
+
 		public function get items():Vector.<BatchItem> { return _items; }
 		
+		/** Total items in the pool */
 		public function get count():int { return _count; }
 		
+		/** Total items to render */
 		public function get drawCount():int { return _drawCount; }
 		
 		public function set drawCount(value:int):void 

@@ -1,7 +1,8 @@
 package starling.extensions 
 {
 	/**
-	 * ...
+	 * Animated elements in the batch must be provided using a BatchItem (or subclass).
+	 *
 	 * @author Philippe / http://philippe.elsass.me
 	 */
 	public class BatchItem 
@@ -9,7 +10,8 @@ package starling.extensions
 		public var x:Number;
 		public var y:Number;
 		public var scale:Number;
-		public var dirty:Boolean;
+		
+		internal var dirty:Boolean;
 		private var _alpha:Number;
 		private var _color:Number;
 		
