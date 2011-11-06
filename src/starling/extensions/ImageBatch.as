@@ -9,6 +9,7 @@ package starling.extensions
 	import flash.geom.Matrix;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
+	import flash.utils.Dictionary;
 	import starling.core.RenderSupport;
 	import starling.core.Starling;
 	import starling.display.DisplayObject;
@@ -37,8 +38,10 @@ package starling.extensions
 		private var vertexBuffer:VertexBuffer3D;
 		private var indexBuffer:IndexBuffer3D;
 		private var premultipliedAlpha:Boolean;
-		private var baseVertexData:VertexData;
 		private var alphaVector:Vector.<Number>;
+		private var baseVertexData:VertexData;
+		private var defaultVertexData:VertexData;
+		private var atlasVertexData:Dictionary = new Dictionary();
 		
 		public function ImageBatch(texture:Texture, blendFactorSource:String = null, blendFactorDest:String = null)
 		{
@@ -68,7 +71,7 @@ package starling.extensions
 				indices.fixed = false;
 				var vertexID:int = _drawCount << 2;
 				var verticeID:int = _drawCount << 2;
-				vertexData.append(baseVertexData);
+				vertexData.append(defaultVertexData);
 				indices.push(verticeID,     verticeID + 1, verticeID + 2, 
 							 verticeID + 1, verticeID + 3, verticeID + 2);
 				items.push(item);
@@ -87,7 +90,7 @@ package starling.extensions
 			if (index < 0) return;
 			_drawCount--;
 			items[index] = items[_drawCount];
-			items[index].dirty = true;
+			items[index].dirty = 3;
 			items[_drawCount] = item;
 		}
 		
@@ -97,14 +100,8 @@ package starling.extensions
 			_drawCount--;
 			var item:BatchItem = items[index];
 			items[index] = items[_drawCount];
-			items[index].dirty = true;
+			items[index].dirty = 3;
 			items[_drawCount] = item;
-		}
-		
-		/** Direct access to the items vector - ONLY FOR READING! */
-		public function getItems():Vector.<BatchItem>
-		{
-			return items;
 		}
         
         public override function dispose():void
@@ -112,7 +109,7 @@ package starling.extensions
             if (vertexBuffer) { vertexBuffer.dispose(); vertexBuffer = null; }
             if (indexBuffer)  { indexBuffer.dispose(); indexBuffer = null; }
 			_texture = null;
-			baseVertexData = null;
+			defaultVertexData = null;
 			items = null;
             
             super.dispose();
@@ -129,31 +126,63 @@ package starling.extensions
         {
             if (_drawCount == 0) return;
 			
-            var item:BatchItem;
-			var vertexID:int, x:Number, y:Number, s:Number, tw2:Number, th2:Number, 
+            var item:BatchItem, vOffset:int, cOffset:int, uOffset:int, 
+				x:Number, y:Number, s:Number, tw2:Number, th2:Number, 
 				ca:Number, sa:Number, ox1:Number, ox2:Number, oy1:Number, oy2:Number;
-            var textureWidth:Number = texture.width;
-            var textureHeight:Number = texture.height;
-			
 			var data:Vector.<Number> = vertexData.data;
+			var tex:Texture = texture, itex:Texture;
+            var textureWidth:Number = tex.width, textureHeight:Number = tex.height;
 			
-			function setValues(offset:int, x:Number, y:Number):void 
-			{
-				data[offset] = x;
-				data[offset + 1] = y;
-			}
-			
-			var sh:int = stage.stageHeight;
 			for (var i:int = 0; i < _drawCount; ++i)
             {
                 item = items[i];
 				
-                vertexID = (i << 2) * 9;
+                vOffset = (i << 2) * 9;
                 x = item.x;
                 y = item.y;
                 s = item.scale;
+				
+				itex = item.texture;
+				if (itex && itex != tex)
+				{
+					tex = itex;
+					textureWidth = tex.width;
+					textureHeight = tex.height;
+				}
                 tw2 = textureWidth  * s >> 1;
                 th2 = textureHeight * s >> 1;
+				
+				if (item.dirty)
+				{
+					if ((item.dirty & 2) > 0)
+					{
+						if (!(itex in atlasVertexData)) 
+							atlasVertexData[itex] = itex.adjustVertexData(baseVertexData);
+						var tdata:Vector.<Number> = atlasVertexData[itex].data;
+						uOffset = vOffset + 7;
+						data[uOffset] = tdata[7];
+						data[uOffset + 1] = tdata[8];
+						data[uOffset + 9] = tdata[7 + 9];
+						data[uOffset + 10] = tdata[8 + 9];
+						data[uOffset + 18] = tdata[7 + 18];
+						data[uOffset + 19] = tdata[8 + 18];
+						data[uOffset + 27] = tdata[7 + 27];
+						data[uOffset + 28] = tdata[8 + 27];
+					}
+					
+					// color/alpha
+					cOffset = vOffset + 3;
+					var k:Number = (premultipliedAlpha ? item.alpha : 1) / 255;
+					data[cOffset] = data[cOffset + 9] = data[cOffset + 18] = data[cOffset + 27] = (item.color >> 16) * k;
+					++cOffset;
+					data[cOffset] = data[cOffset + 9] = data[cOffset + 18] = data[cOffset + 27] = ((item.color >> 8) & 0xff) * k;
+					++cOffset;
+					data[cOffset] = data[cOffset + 9] = data[cOffset + 18] = data[cOffset + 27] = (item.color & 0xff) * k;
+					++cOffset;
+					data[cOffset] = data[cOffset + 9] = data[cOffset + 18] = data[cOffset + 27] = item.alpha;
+					++cOffset;
+					item.dirty = 0;
+				}
 				
 				if (item.angle)
 				{
@@ -163,41 +192,25 @@ package starling.extensions
 					ox2 = tw2 * ca - th2 * sa;
 					oy1 = -tw2 * sa + th2 * ca;
 					oy2 = tw2 * sa + th2 * ca;
-					data[vertexID] 		= x - ox1;
-					data[vertexID + 1] 	= y - oy1;
-					data[vertexID + 9] 	= x + ox2;
-					data[vertexID + 10] = y - oy2;
-					data[vertexID + 18] = x - ox2;
-					data[vertexID + 19] = y + oy2;
-					data[vertexID + 27] = x + ox1;
-					data[vertexID + 28] = y + oy1;
+					data[vOffset] 		= x - ox1;
+					data[vOffset + 1] 	= y - oy1;
+					data[vOffset + 9] 	= x + ox2;
+					data[vOffset + 10] = y - oy2;
+					data[vOffset + 18] = x - ox2;
+					data[vOffset + 19] = y + oy2;
+					data[vOffset + 27] = x + ox1;
+					data[vOffset + 28] = y + oy1;
 				}
 				else 
 				{
-					data[vertexID] 		= x - tw2;
-					data[vertexID + 1] 	= y - th2;
-					data[vertexID + 9] 	= x + tw2;
-					data[vertexID + 10] = y - th2;
-					data[vertexID + 18] = x - tw2;
-					data[vertexID + 19] = y + th2;
-					data[vertexID + 27] = x + tw2;
-					data[vertexID + 28] = y + th2;
-				}
-				
-				if (item.dirty)
-				{
-					// color/alpha
-					vertexID += 3;
-					var k:Number = (premultipliedAlpha ? item.alpha : 1) / 255;
-					data[vertexID] = data[vertexID + 9] = data[vertexID + 18] = data[vertexID + 27] = (item.color >> 16) * k;
-					++vertexID;
-					data[vertexID] = data[vertexID + 9] = data[vertexID + 18] = data[vertexID + 27] = ((item.color >> 8) & 0xff) * k;
-					++vertexID;
-					data[vertexID] = data[vertexID + 9] = data[vertexID + 18] = data[vertexID + 27] = (item.color & 0xff) * k;
-					++vertexID;
-					data[vertexID] = data[vertexID + 9] = data[vertexID + 18] = data[vertexID + 27] = item.alpha;
-					++vertexID;
-					item.dirty = false;
+					data[vOffset] 		= x - tw2;
+					data[vOffset + 1] 	= y - th2;
+					data[vOffset + 9] 	= x + tw2;
+					data[vOffset + 10] = y - th2;
+					data[vOffset + 18] = x - tw2;
+					data[vOffset + 19] = y + th2;
+					data[vOffset + 27] = x + tw2;
+					data[vOffset + 28] = y + th2;
 				}
             }
 			
@@ -237,6 +250,20 @@ package starling.extensions
 		
 		/* PROPERTIES */
 		
+		/** 
+		 * Direct access to the items vector:
+		 * - ONLY FOR READING! don't add/remove items yourself
+		 * - only the first <code>count</code> items are rendered
+		 */
+		public function getItems():Vector.<BatchItem>
+		{
+			return items;
+		}
+		
+		/** Only the first <code>count</count> items are rendered */
+		public function get count():int { return _drawCount; }
+		
+		/** Default texture */
 		public function get texture():Texture { return _texture; }
 		
 		public function set texture(value:Texture):void 
@@ -254,7 +281,7 @@ package starling.extensions
             baseVertexData.setTexCoords(1, 1.0, 0.0);
             baseVertexData.setTexCoords(2, 0.0, 1.0);
             baseVertexData.setTexCoords(3, 1.0, 1.0);
-            baseVertexData = value.adjustVertexData(baseVertexData);
+            defaultVertexData = value.adjustVertexData(baseVertexData);
 		}
 	}
 

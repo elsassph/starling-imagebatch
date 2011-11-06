@@ -1,5 +1,6 @@
 package starling.extensions 
 {
+	import starling.textures.Texture;
 	/**
 	 * Animated elements in the batch must be provided using a BatchItem (or subclass).
 	 *
@@ -13,16 +14,17 @@ package starling.extensions
 		public var angle:Number;
 		public var tag:*;
 		
-		internal var dirty:Boolean;
+		internal var dirty:int;
 		internal var _color:Number;
 		private var _alpha:Number;
+		private var _texture:Texture;
 		
 		public function BatchItem() 
 		{
 			x = y = angle = 0;
 			scale = _alpha = 1;
 			_color = 0xffffff;
-			dirty = true;
+			dirty |= 1;
 		}
 		
 		public function get alpha():Number { return _alpha; }
@@ -32,7 +34,7 @@ package starling.extensions
 			if (_alpha != value) 
 			{
 				_alpha = value;
-				dirty = true;
+				dirty |= 1;
 			}
 		}
 		
@@ -43,8 +45,16 @@ package starling.extensions
 			if (_color != value)
 			{
 				_color = value;
-				dirty = true;
+				dirty |= 1;
 			}
+		}
+		
+		public function get texture():Texture { return _texture; }
+		
+		public function set texture(value:Texture):void 
+		{
+			_texture = value;
+			dirty |= 2;
 		}
 		
 	}
