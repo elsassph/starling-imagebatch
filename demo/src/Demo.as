@@ -5,7 +5,7 @@ package
 	import starling.core.Starling;
 	
 	/**
-	 * ...
+	 * ImageBatch demo
 	 * @author Philippe / http://philippe.elsass.me
 	 */
 	public class Demo extends Sprite 

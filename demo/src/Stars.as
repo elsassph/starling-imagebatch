@@ -7,7 +7,7 @@ package
 	import starling.textures.Texture;
 	
 	/**
-	 * ...
+	 * Animate plenty of stars
 	 * @author Philippe / http://philippe.elsass.me
 	 */
 	public class Stars extends ImageBatch 
@@ -17,7 +17,6 @@ package
 		
 		private var steps:int = 60;
 		private var anim:Vector.<Number>;
-		private var removedOne:Boolean;
 		
 		public function Stars() 
 		{
