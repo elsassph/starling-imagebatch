@@ -19,6 +19,7 @@ Currently limited:
 - alpha/color changes are not optimized yet
 
 TODO:
+- add a demo
 - rotation
 - spritesheet animations
 
