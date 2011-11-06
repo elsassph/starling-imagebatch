@@ -12,13 +12,12 @@
     <movie minorVersion="0" />
     <movie platform="Flash Player" />
     <movie background="#000000" />
-    <movie preferredSDK="Flex 4.5.1, AIR 3.0;4.5.1, 3.0;" />
   </output>
   <!-- Other classes to be compiled into your SWF -->
   <classpaths>
     <class path="src" />
     <class path="demo\src" />
-    <class path="..\starling\starling\src" />
+    <class path="..\starling-framework\starling\src" />
   </classpaths>
   <!-- Build options -->
   <build>

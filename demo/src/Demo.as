@@ -14,6 +14,9 @@ package
 		
 		public function Demo() 
 		{
+			stage.align = "TL";
+			stage.scaleMode = "noScale";
+			
 			ctx = new Starling(Stars, stage);
 			ctx.start();
 			

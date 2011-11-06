@@ -40,6 +40,7 @@ package
 				item.x = Math.random() * stage.stageWidth;
 				item.y = -10 + Math.random() * (stage.stageHeight + 20);
 				item.scale = 0.2 + Math.random() * 0.2;
+				item.angle = Math.random() * Math.PI * 2;
 				item.tag = Math.random() * steps >> 0;
 			}
 			
@@ -54,6 +55,7 @@ package
 				item.y += item.scale * 2;
 				item.tag = (item.tag + 1) % steps;
 				item.alpha = anim[item.tag];
+				item.angle += item.scale / 5;
 				if (item.y > sh) item.y = -10;
 			}
 		}

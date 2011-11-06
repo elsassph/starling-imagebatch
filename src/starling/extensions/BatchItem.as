@@ -10,6 +10,7 @@ package starling.extensions
 		public var x:Number;
 		public var y:Number;
 		public var scale:Number;
+		public var angle:Number;
 		public var tag:*;
 		
 		internal var dirty:Boolean;
@@ -18,7 +19,7 @@ package starling.extensions
 		
 		public function BatchItem() 
 		{
-			x = y = 0;
+			x = y = angle = 0;
 			scale = _alpha = 1;
 			_color = 0xffffff;
 			dirty = true;

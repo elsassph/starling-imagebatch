@@ -130,7 +130,8 @@ package starling.extensions
             if (_drawCount == 0) return;
 			
             var item:BatchItem;
-			var vertexID:int, x:Number, y:Number, s:Number, xOffset:Number, yOffset:Number;
+			var vertexID:int, x:Number, y:Number, s:Number, tw2:Number, th2:Number, 
+				ca:Number, sa:Number, ox1:Number, ox2:Number, oy1:Number, oy2:Number;
             var textureWidth:Number = texture.width;
             var textureHeight:Number = texture.height;
 			
@@ -147,23 +148,41 @@ package starling.extensions
             {
                 item = items[i];
 				
-                vertexID = i << 2;
+                vertexID = (i << 2) * 9;
                 x = item.x;
                 y = item.y;
                 s = item.scale;
-                xOffset = textureWidth  * s >> 1;
-                yOffset = textureHeight * s >> 1;
-                
-				vertexID *= 9;
+                tw2 = textureWidth  * s >> 1;
+                th2 = textureHeight * s >> 1;
 				
-				data[vertexID] 		= x - xOffset;
-				data[vertexID + 1] 	= y - yOffset;
-				data[vertexID + 9] 	= x + xOffset;
-				data[vertexID + 10] = y - yOffset;
-				data[vertexID + 18] = x - xOffset;
-				data[vertexID + 19] = y + yOffset;
-				data[vertexID + 27] = x + xOffset;
-				data[vertexID + 28] = y + yOffset;
+				if (item.angle)
+				{
+					ca = Math.cos(item.angle);
+					sa = Math.sin(item.angle);
+					ox1 = tw2 * ca + th2 * sa;
+					ox2 = tw2 * ca - th2 * sa;
+					oy1 = -tw2 * sa + th2 * ca;
+					oy2 = tw2 * sa + th2 * ca;
+					data[vertexID] 		= x - ox1;
+					data[vertexID + 1] 	= y - oy1;
+					data[vertexID + 9] 	= x + ox2;
+					data[vertexID + 10] = y - oy2;
+					data[vertexID + 18] = x - ox2;
+					data[vertexID + 19] = y + oy2;
+					data[vertexID + 27] = x + ox1;
+					data[vertexID + 28] = y + oy1;
+				}
+				else 
+				{
+					data[vertexID] 		= x - tw2;
+					data[vertexID + 1] 	= y - th2;
+					data[vertexID + 9] 	= x + tw2;
+					data[vertexID + 10] = y - th2;
+					data[vertexID + 18] = x - tw2;
+					data[vertexID + 19] = y + th2;
+					data[vertexID + 27] = x + tw2;
+					data[vertexID + 28] = y + th2;
+				}
 				
 				if (item.dirty)
 				{
