@@ -33,7 +33,7 @@ package
 			for (var j:int = 0; j < steps; j++) 
 				anim.push(0.5 + 0.5 * Math.cos((j / steps) * Math.PI * 2));
 			
-			var count:int = 5000;
+			var count:int = 10000;
 			for (var i:int = 0; i < count; i++) 
 			{
 				var item:BatchItem = addItem();
@@ -41,6 +41,7 @@ package
 				item.y = -10 + Math.random() * (stage.stageHeight + 20);
 				item.scale = 0.2 + Math.random() * 0.2;
 				item.angle = Math.random() * Math.PI * 2;
+				item.color = Math.random() * 0xffffff >> 0;
 				item.tag = Math.random() * steps >> 0;
 			}
 			
