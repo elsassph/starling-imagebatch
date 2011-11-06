@@ -27,11 +27,11 @@ package starling.extensions
 		public var blendFactorSource:String;
 		public var blendFactorDest:String;
 
-		private var _count:int;
 		private var _drawCount:int;
 		private var _texture:Texture;
-		private var _items:Vector.<BatchItem>;
-
+		private var _clonedItems:Vector.<BatchItem>;
+		
+		private var items:Vector.<BatchItem>;
 		private var vertexData:VertexData;
 		private var indices:Vector.<uint>;
 		private var vertexBuffer:VertexBuffer3D;
@@ -46,56 +46,74 @@ package starling.extensions
 			this.blendFactorSource = blendFactorSource;
 			this.texture = texture;
 			
-			_items = new Vector.<BatchItem>();
+			items = new Vector.<BatchItem>();
 			vertexData = new VertexData(0, premultipliedAlpha);
 			indices = new <uint>[];
 		}
 		
-		public function addItem(item:BatchItem):void
+		public function addItem():BatchItem
 		{
-			var v:Vector.<BatchItem> = new <BatchItem>[item];
-			addRange(v);
+			var item:BatchItem;
+			if (_drawCount < items.length) 
+			{
+				item = items[_drawCount];
+				item.x = item.y = 0;
+				item.color = 0xffffff;
+				item.alpha = item.scale = 1;
+			}
+			else 
+			{
+				item = new BatchItem();
+				items.fixed = false;
+				indices.fixed = false;
+				var vertexID:int = _drawCount << 2;
+				var verticeID:int = _drawCount << 2;
+				vertexData.append(baseVertexData);
+				indices.push(verticeID,     verticeID + 1, verticeID + 2, 
+							 verticeID + 1, verticeID + 3, verticeID + 2);
+				items.push(item);
+				items.fixed = true;
+				indices.fixed = true;
+			}
+			_drawCount++;
+            if (vertexBuffer) { vertexBuffer.dispose(); vertexBuffer = null; }
+            if (indexBuffer)  { indexBuffer.dispose(); indexBuffer = null; }
+			return item;
 		}
 		
-		public function addRange(newItems:Vector.<BatchItem>):void
+		public function removeItem(item:BatchItem):void
 		{
-            var context:Context3D = Starling.context;
-            if (context == null) throw new MissingContextError();
-			
-			_items.fixed = false;
-			indices.fixed = false;
-			
-			for (var i:int = 0; i < newItems.length; i++) 
-			{
-				var vertexID:int = (count + i) << 2;
-				var numVertices:int = (count + i) << 2;
-				
-				var item:BatchItem = newItems[i];
-				_items.push(item);
-				
-				vertexData.append(baseVertexData);
-				for (var j:int = 0; j < 4; ++j)
-                    vertexData.setColor(vertexID + j, item.color, item.alpha);
-				
-                indices.push(numVertices,     numVertices + 1, numVertices + 2, 
-                             numVertices + 1, numVertices + 3, numVertices + 2);
-			}
-			
-			_items.fixed = true;
-			indices.fixed = true;
-			_count = items.length;
-			
-			vertexBuffer = context.createVertexBuffer(count * 4, VertexData.ELEMENTS_PER_VERTEX);
-			indexBuffer = context.createIndexBuffer(count * 6);
+			var index:int = items.indexOf(item);
+			if (index < 0) return;
+			_drawCount--;
+			items[index] = items[_drawCount];
+			items[index].dirty = true;
+			items[_drawCount] = item;
+		}
+		
+		public function removeItemAt(index:int):void
+		{
+			if (_drawCount <= index) return;
+			_drawCount--;
+			var item:BatchItem = items[index];
+			items[index] = items[_drawCount];
+			items[index].dirty = true;
+			items[_drawCount] = item;
+		}
+		
+		/** Direct access to the items vector - ONLY FOR READING! */
+		public function getItems():Vector.<BatchItem>
+		{
+			return items;
 		}
         
         public override function dispose():void
         {
-            if (vertexBuffer) vertexBuffer.dispose();
-            if (indexBuffer)  indexBuffer.dispose();
+            if (vertexBuffer) { vertexBuffer.dispose(); vertexBuffer = null; }
+            if (indexBuffer)  { indexBuffer.dispose(); indexBuffer = null; }
 			_texture = null;
 			baseVertexData = null;
-			_items = null;
+			items = null;
             
             super.dispose();
         }
@@ -109,7 +127,7 @@ package starling.extensions
 		
 		public override function render(support:RenderSupport, alpha:Number):void
         {
-            if (count == 0) return;
+            if (_drawCount == 0) return;
 			
             var item:BatchItem;
 			var vertexID:int, x:Number, y:Number, s:Number, xOffset:Number, yOffset:Number;
@@ -136,14 +154,8 @@ package starling.extensions
                 xOffset = textureWidth  * s >> 1;
                 yOffset = textureHeight * s >> 1;
                 
-				if (item.dirty)
-				{
-					for (var j:int = 0; j < 4; ++j)
-						vertexData.setColor(vertexID + j, item.color, item.alpha);
-					item.dirty = false;
-				}
-				
 				vertexID *= 9;
+				
 				data[vertexID] 		= x - xOffset;
 				data[vertexID + 1] 	= y - yOffset;
 				data[vertexID + 9] 	= x + xOffset;
@@ -152,6 +164,22 @@ package starling.extensions
 				data[vertexID + 19] = y + yOffset;
 				data[vertexID + 27] = x + xOffset;
 				data[vertexID + 28] = y + yOffset;
+				
+				if (item.dirty)
+				{
+					// color/alpha
+					vertexID += 3;
+					var k:Number = (premultipliedAlpha ? item.alpha : 1) / 255;
+					data[vertexID] = data[vertexID + 9] = data[vertexID + 18] = data[vertexID + 27] = (item.color >> 16) * k;
+					++vertexID;
+					data[vertexID] = data[vertexID + 9] = data[vertexID + 18] = data[vertexID + 27] = ((item.color >> 8) & 0xff) * k;
+					++vertexID;
+					data[vertexID] = data[vertexID + 9] = data[vertexID + 18] = data[vertexID + 27] = (item.color & 0xff) * k;
+					++vertexID;
+					data[vertexID] = data[vertexID + 9] = data[vertexID + 18] = data[vertexID + 27] = item.alpha;
+					++vertexID;
+					item.dirty = false;
+				}
             }
 			
             alpha *= this.alpha;
@@ -160,8 +188,13 @@ package starling.extensions
             
             if (context == null) throw new MissingContextError();
             
-            vertexBuffer.uploadFromVector(vertexData.data, 0, count * 4);
-            indexBuffer.uploadFromVector(indices, 0, count * 6);
+			if (vertexBuffer == null)
+			{
+				vertexBuffer = context.createVertexBuffer(items.length * 4, VertexData.ELEMENTS_PER_VERTEX);
+				indexBuffer = context.createIndexBuffer(items.length * 6);
+			}
+            vertexBuffer.uploadFromVector(vertexData.data, 0, items.length * 4);
+            indexBuffer.uploadFromVector(indices, 0, items.length * 6);
             
 			var blendDest:String = blendFactorDest || Context3DBlendFactor.ONE_MINUS_SOURCE_ALPHA;
             var blendSource:String = blendFactorSource ||
@@ -175,7 +208,7 @@ package starling.extensions
             context.setVertexBufferAt(2, vertexBuffer, VertexData.TEXCOORD_OFFSET, Context3DVertexBufferFormat.FLOAT_2);
             context.setProgramConstantsFromMatrix(Context3DProgramType.VERTEX, 0, support.mvpMatrix, true);            
             context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 0, alphaVector, 1);
-            context.drawTriangles(indexBuffer, 0, drawCount * 2);
+            context.drawTriangles(indexBuffer, 0, _drawCount * 2);
             
             context.setTextureAt(1, null);
             context.setVertexBufferAt(0, null);
@@ -204,20 +237,6 @@ package starling.extensions
             baseVertexData.setTexCoords(3, 1.0, 1.0);
             baseVertexData = value.adjustVertexData(baseVertexData);
 		}
-
-		public function get items():Vector.<BatchItem> { return _items; }
-		
-		/** Total items in the pool */
-		public function get count():int { return _count; }
-		
-		/** Total items to render */
-		public function get drawCount():int { return _drawCount; }
-		
-		public function set drawCount(value:int):void 
-		{
-			_drawCount = value;
-		}
-		
 	}
 
 }

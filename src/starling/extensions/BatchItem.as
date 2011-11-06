@@ -10,16 +10,18 @@ package starling.extensions
 		public var x:Number;
 		public var y:Number;
 		public var scale:Number;
+		public var tag:*;
 		
 		internal var dirty:Boolean;
+		internal var _color:Number;
 		private var _alpha:Number;
-		private var _color:Number;
 		
 		public function BatchItem() 
 		{
 			x = y = 0;
-			scale = alpha = 1;
-			color = 0xffffff;
+			scale = _alpha = 1;
+			_color = 0xffffff;
+			dirty = true;
 		}
 		
 		public function get alpha():Number { return _alpha; }

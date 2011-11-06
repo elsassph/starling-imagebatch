@@ -1,13 +1,9 @@
 **An optimized Image batch class for Starling.**
 
-*Very very early alpha code and API coded while testing Starling. 
-The API will definitely change completely!*
+*Very early alpha code and API*
 
-The batch works as a "pool of items", and nothing will be rendered until you set the .drawCount 
+The batch is intended to work as a "pool of items", and nothing will be rendered until you set the .drawCount 
 property which tells how many items from the pool should be rendered.
-
-*Currently the correct way to add items is using .addItem()/.addItemRange() 
-- do NOT add/remove items by manipulating the .items property.*
 
 **Current limitations:**
 
@@ -21,8 +17,6 @@ exposed through methods.
 
 **TODO:**
 
- - add a demo
  - rotation
- - optimize alpha/color changes
  - spritesheet animations
 
