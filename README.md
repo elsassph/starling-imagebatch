@@ -25,6 +25,6 @@ independently, and this is a big difference compared to animating a few high-pol
 
 This class is inspired by Starling's [Particle System extension][1] but with geometry building inlined.
 
-[1]: philippe.elsass.me/lab/StarlingImageBatch
+[1]: http://philippe.elsass.me/lab/StarlingImageBatch
 [2]: https://github.com/PrimaryFeather/Starling-Extension-Particle-System
 
