@@ -6,15 +6,13 @@ The ImageBatch can efficiently (in terms of CPU and memory) render a large numbe
 
 This class is designed as an object pool - items are recycled and vectors are never modified.
 
+**Features:**
 
-**Current limitations:**
-
- - no spritesheet (uv shared), no animation, no rotation
-
+ - low memory footprint, items pooling
+ - animate: x,y,scale,alpha,color,rotation
 
 **TODO:**
 
- - rotation
  - spritesheet support
 
 
