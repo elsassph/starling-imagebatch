@@ -85,6 +85,10 @@ package net.hires.debug
 				if (theme.memmax != null) _theme.memmax = theme.memmax;
 			}
 			
+			// Thst's kind of a bad move here. I mean the weak reference
+			// Think about this - if you don't add this object to the stage 
+			// in a few minutes after its creation 
+			// the listener will be lost forever =)
 			addEventListener(Event.ADDED_TO_STAGE, init, false, 0, true);
 		}
 
