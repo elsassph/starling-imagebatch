@@ -2,18 +2,25 @@
 
 *Very early alpha code and API*
 
-Use the ImageBatch to render a large number of similar images. 
+The ImageBatch can efficiently (in terms of CPU and memory) render a large number of images sharing the same texture.
 
-This class is designed as an object pool - addItem will increase its capacity if needed and removeItem will only
-swap items and reduce the number of triangles to draw.
+This class is designed as an object pool - items are recycled and vectors are never modified.
+
 
 **Current limitations:**
 
- - one texture, no animation, no rotation
+ - no spritesheet (uv shared), no animation, no rotation
 
 
 **TODO:**
 
  - rotation
- - spritesheet animations
+ - spritesheet support
+
+
+**Credits:**
+
+This class is inspired by Starling's [Particle System extension][1] but with geometry building inlined.
+
+[1]: https://github.com/PrimaryFeather/Starling-Extension-Particle-System
 
