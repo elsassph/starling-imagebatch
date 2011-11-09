@@ -129,9 +129,9 @@ package starling.extensions
             var item:BatchItem, vOffset:int, cOffset:int, uOffset:int, 
 				x:Number, y:Number, s:Number, tw2:Number, th2:Number, 
 				ca:Number, sa:Number, ox1:Number, ox2:Number, oy1:Number, oy2:Number;
-			var data:Vector.<Number> = vertexData.data;
 			var tex:Texture = texture, itex:Texture;
             var textureWidth:Number = tex.width, textureHeight:Number = tex.height;
+			var data:Vector.<Number> = vertexData.data;
 			
 			for (var i:int = 0; i < _drawCount; ++i)
             {
@@ -160,26 +160,30 @@ package starling.extensions
 							atlasVertexData[itex] = itex.adjustVertexData(baseVertexData);
 						var tdata:Vector.<Number> = atlasVertexData[itex].data;
 						uOffset = vOffset + 7;
-						data[uOffset] = tdata[7];
-						data[uOffset + 1] = tdata[8];
-						data[uOffset + 9] = tdata[7 + 9];
-						data[uOffset + 10] = tdata[8 + 9];
-						data[uOffset + 18] = tdata[7 + 18];
-						data[uOffset + 19] = tdata[8 + 18];
-						data[uOffset + 27] = tdata[7 + 27];
-						data[uOffset + 28] = tdata[8 + 27];
+						data[int(uOffset)] = tdata[int(7)];
+						data[int(uOffset + 1)] = tdata[int(8)];
+						data[int(uOffset + 9)] = tdata[int(16)];
+						data[int(uOffset + 10)] = tdata[int(17)];
+						data[int(uOffset + 18)] = tdata[int(25)];
+						data[int(uOffset + 19)] = tdata[int(26)];
+						data[int(uOffset + 27)] = tdata[int(34)];
+						data[int(uOffset + 28)] = tdata[int(35)];
 					}
 					
 					// color/alpha
 					cOffset = vOffset + 3;
 					var k:Number = (premultipliedAlpha ? item.alpha : 1) / 255;
-					data[cOffset] = data[cOffset + 9] = data[cOffset + 18] = data[cOffset + 27] = (item.color >> 16) * k;
+					data[cOffset] = data[int(cOffset + 9)] = data[int(cOffset + 18)] = data[int(cOffset + 27)]
+						= (item.color >> 16) * k;
 					++cOffset;
-					data[cOffset] = data[cOffset + 9] = data[cOffset + 18] = data[cOffset + 27] = ((item.color >> 8) & 0xff) * k;
+					data[cOffset] = data[int(cOffset + 9)] = data[int(cOffset + 18)] = data[int(cOffset + 27)] 
+						= ((item.color >> 8) & 0xff) * k;
 					++cOffset;
-					data[cOffset] = data[cOffset + 9] = data[cOffset + 18] = data[cOffset + 27] = (item.color & 0xff) * k;
+					data[cOffset] = data[int(cOffset + 9)] = data[int(cOffset + 18)] = data[int(cOffset + 27)] 
+						= (item.color & 0xff) * k;
 					++cOffset;
-					data[cOffset] = data[cOffset + 9] = data[cOffset + 18] = data[cOffset + 27] = item.alpha;
+					data[cOffset] = data[int(cOffset + 9)] = data[int(cOffset + 18)] = data[int(cOffset + 27)] 
+						= item.alpha;
 					++cOffset;
 					item.dirty = 0;
 				}
@@ -192,25 +196,25 @@ package starling.extensions
 					ox2 = tw2 * ca - th2 * sa;
 					oy1 = -tw2 * sa + th2 * ca;
 					oy2 = tw2 * sa + th2 * ca;
-					data[vOffset] 		= x - ox1;
-					data[vOffset + 1] 	= y - oy1;
-					data[vOffset + 9] 	= x + ox2;
-					data[vOffset + 10] = y - oy2;
-					data[vOffset + 18] = x - ox2;
-					data[vOffset + 19] = y + oy2;
-					data[vOffset + 27] = x + ox1;
-					data[vOffset + 28] = y + oy1;
+					data[int(vOffset)] 		= x - ox1;
+					data[int(vOffset + 1)] 	= y - oy1;
+					data[int(vOffset + 9)] 	= x + ox2;
+					data[int(vOffset + 10)] = y - oy2;
+					data[int(vOffset + 18)] = x - ox2;
+					data[int(vOffset + 19)] = y + oy2;
+					data[int(vOffset + 27)] = x + ox1;
+					data[int(vOffset + 28)] = y + oy1;
 				}
 				else 
 				{
-					data[vOffset] 		= x - tw2;
-					data[vOffset + 1] 	= y - th2;
-					data[vOffset + 9] 	= x + tw2;
-					data[vOffset + 10] = y - th2;
-					data[vOffset + 18] = x - tw2;
-					data[vOffset + 19] = y + th2;
-					data[vOffset + 27] = x + tw2;
-					data[vOffset + 28] = y + th2;
+					data[int(vOffset)] 		= x - tw2;
+					data[int(vOffset + 1)] 	= y - th2;
+					data[int(vOffset + 9)] 	= x + tw2;
+					data[int(vOffset + 10)] = y - th2;
+					data[int(vOffset + 18)] = x - tw2;
+					data[int(vOffset + 19)] = y + th2;
+					data[int(vOffset + 27)] = x + tw2;
+					data[int(vOffset + 28)] = y + th2;
 				}
             }
 			

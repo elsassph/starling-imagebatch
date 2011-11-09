@@ -52,7 +52,7 @@ package
 				item.scale = 0.2 + Math.random() * 0.2;
 				item.angle = Math.random() * Math.PI * 2;
 				item.color = Math.random() * 0xffffff >> 0;
-				item.texture = i & 1 ? t1 : t2; // use custom texture from atlas
+				item.texture = (i / 100) & 1 ? t1 : t2; // use a custom texture from atlas
 				item.tag = Math.random() * steps >> 0; // store any data in item.tag
 			}
 			
@@ -67,7 +67,7 @@ package
 			var items:Vector.<BatchItem> = getItems(); // items pool
 			var n:int = count; // active items count
 			
-			for (var i:int = 0; i < n; i++) 
+			for (var i:int = 0; i < n; ++i) 
 			{
 				item = items[i];
 				item.y += item.scale * 2;
@@ -75,6 +75,12 @@ package
 				item.alpha = anim[item.tag];
 				item.angle += item.scale / 5;
 				if (item.y > sh) item.y = -10;
+				
+				// WARNING when using removeChild:
+				// - you can call removeChild/removeChildAt(i), the array isn't modified,
+				// - however the item at index 'i' will be swapped by the item previsouly at index 'count-1'
+				//   and count will be decreased by one as there is one item less to render,
+				//   and finally this means you have to decrement i to re-process the item at index 'i'
 			}
 		}
 		
