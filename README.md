@@ -1,6 +1,6 @@
 **An optimized Image batch class for Starling.**
 
-*Warning: alpha code and API*
+*Note: Beta code and API*
 
 The ImageBatch can efficiently (in terms of CPU and memory) render a large number of images sharing the same texture. 
 This class is designed as an object pool: items are recycled and vectors are never modified.
