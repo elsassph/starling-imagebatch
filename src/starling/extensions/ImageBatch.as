@@ -234,7 +234,11 @@ package starling.extensions
 					
 					// color/alpha
 					cOffset = vOffset + 3;
-					var k:Number = (premultipliedAlpha ? item.alpha : 1) / 255;
+					
+					//var k:Number = (premultipliedAlpha ? item.alpha : 1) / 255; <- memory exploding! Oo
+					var k:Number = (premultipliedAlpha ? item.alpha : 1);
+					k /= 255;
+					
 					data[cOffset] = data[int(cOffset + 9)] = data[int(cOffset + 18)] = data[int(cOffset + 27)]
 						= (item.color >> 16) * k;
 					++cOffset;
