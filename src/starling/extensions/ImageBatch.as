@@ -1,10 +1,12 @@
 package starling.extensions 
 {
+	import com.adobe.utils.AGALMiniAssembler;
 	import flash.display3D.Context3D;
 	import flash.display3D.Context3DBlendFactor;
 	import flash.display3D.Context3DProgramType;
 	import flash.display3D.Context3DVertexBufferFormat;
 	import flash.display3D.IndexBuffer3D;
+	import flash.display3D.Program3D;
 	import flash.display3D.VertexBuffer3D;
 	import flash.geom.Matrix;
 	import flash.geom.Point;
@@ -16,6 +18,7 @@ package starling.extensions
 	import starling.display.Image;
 	import starling.errors.MissingContextError;
 	import starling.textures.Texture;
+	import starling.textures.TextureSmoothing;
 	import starling.utils.VertexData;
 	
 	/**
@@ -42,17 +45,72 @@ package starling.extensions
 		private var baseVertexData:VertexData;
 		private var defaultVertexData:VertexData;
 		private var atlasVertexData:Dictionary = new Dictionary();
+		private var smoothing:String;
 		
-		public function ImageBatch(texture:Texture, blendFactorSource:String = null, blendFactorDest:String = null)
+		public function ImageBatch(texture:Texture, smoothing:String = TextureSmoothing.BILINEAR, blendFactorSource:String = null, blendFactorDest:String = null)
 		{
 			this.blendFactorDest = blendFactorDest;
 			this.blendFactorSource = blendFactorSource;
+			this.smoothing = smoothing;
 			this.texture = texture;
 			
 			items = new Vector.<BatchItem>();
 			vertexData = new VertexData(0, premultipliedAlpha);
 			indices = new <uint>[];
+			
+			registerPrograms(Starling.current);
 		}
+		
+		public function registerPrograms(target:Starling):void
+        {
+            // create vertex and fragment programs - from assembly.
+            // each combination of repeat/mipmap/smoothing has its own fragment shader.
+            
+            var vertexProgramCode:String =
+                "m44 op, va0, vc0  \n" +  // 4x4 matrix transform to output clipspace
+                "mov v0, va1       \n" +  // pass color to fragment program
+                "mov v1, va2       \n";   // pass texture coordinates to fragment program
+
+            var fragmentProgramCode:String =
+                "tex ft1, v1, fs1 <???> \n" +  // sample texture 1
+                "mul ft2, ft1, v0       \n" +  // multiply color with texel color
+                "mul oc, ft2, fc0       \n";   // multiply color with alpha
+
+            var vertexProgramAssembler:AGALMiniAssembler = new AGALMiniAssembler();
+            vertexProgramAssembler.assemble(Context3DProgramType.VERTEX, vertexProgramCode);
+            
+            var fragmentProgramAssembler:AGALMiniAssembler = new AGALMiniAssembler();
+            
+            var smoothingTypes:Array = [
+                TextureSmoothing.NONE,
+                TextureSmoothing.BILINEAR,
+                TextureSmoothing.TRILINEAR
+            ];
+            
+            for each (var repeat:Boolean in [true, false])
+            {
+                for each (var mipmap:Boolean in [true, false])
+                {
+                    for each (var smoothing:String in smoothingTypes)
+                    {
+                        var options:Array = ["2d", repeat ? "repeat" : "clamp"];
+                        
+                        if (smoothing == TextureSmoothing.NONE)
+                            options.push("nearest", mipmap ? "mipnearest" : "mipnone");
+                        else if (smoothing == TextureSmoothing.BILINEAR)
+                            options.push("linear", mipmap ? "mipnearest" : "mipnone");
+                        else
+                            options.push("linear", mipmap ? "miplinear" : "mipnone");
+                        
+                        fragmentProgramAssembler.assemble(Context3DProgramType.FRAGMENT,
+                            fragmentProgramCode.replace("???", options.join())); 
+                        
+                        target.registerProgram(getProgramName(mipmap, repeat, smoothing),
+                            vertexProgramAssembler.agalcode, fragmentProgramAssembler.agalcode);
+                    }
+                }
+            }
+        }
 		
 		public function addItem():BatchItem
 		{
@@ -115,7 +173,7 @@ package starling.extensions
             super.dispose();
         }
 		
-		public override function getBounds(targetSpace:DisplayObject):Rectangle
+		public override function getBounds(targetSpace:DisplayObject, resultRect:Rectangle=null):Rectangle
         {
             var matrix:Matrix = getTransformationMatrix(targetSpace);
             var position:Point = matrix.transformPoint(new Point(x, y));
@@ -131,7 +189,7 @@ package starling.extensions
 				ca:Number, sa:Number, ox1:Number, ox2:Number, oy1:Number, oy2:Number;
 			var tex:Texture = texture, itex:Texture;
             var textureWidth:Number = tex.width, textureHeight:Number = tex.height;
-			var data:Vector.<Number> = vertexData.data;
+			var data:Vector.<Number> = vertexData.rawData;
 			
 			for (var i:int = 0; i < _drawCount; ++i)
             {
@@ -157,8 +215,12 @@ package starling.extensions
 					if ((item.dirty & 2) > 0)
 					{
 						if (!(itex in atlasVertexData)) 
-							atlasVertexData[itex] = itex.adjustVertexData(baseVertexData);
-						var tdata:Vector.<Number> = atlasVertexData[itex].data;
+						{
+							var vData:VertexData = baseVertexData.clone();
+							itex.adjustVertexData(vData, 0, 4);
+							atlasVertexData[itex] = vData;
+						}
+						var tdata:Vector.<Number> = atlasVertexData[itex].rawData;
 						uOffset = vOffset + 7;
 						data[int(uOffset)] = tdata[int(7)];
 						data[int(uOffset + 1)] = tdata[int(8)];
@@ -219,7 +281,8 @@ package starling.extensions
             }
 			
             alpha *= this.alpha;
-            var program:String = Image.getProgramName(texture.mipMapping);
+
+            var program:String = getProgramName(texture.mipMapping, false, smoothing);
             var context:Context3D = Starling.context;
             
             if (context == null) throw new MissingContextError();
@@ -229,7 +292,7 @@ package starling.extensions
 				vertexBuffer = context.createVertexBuffer(items.length * 4, VertexData.ELEMENTS_PER_VERTEX);
 				indexBuffer = context.createIndexBuffer(items.length * 6);
 			}
-            vertexBuffer.uploadFromVector(vertexData.data, 0, items.length * 4);
+            vertexBuffer.uploadFromVector(vertexData.rawData, 0, items.length * 4);
             indexBuffer.uploadFromVector(indices, 0, items.length * 6);
             
 			var blendDest:String = blendFactorDest || Context3DBlendFactor.ONE_MINUS_SOURCE_ALPHA;
@@ -237,7 +300,9 @@ package starling.extensions
                 (premultipliedAlpha ? Context3DBlendFactor.ONE : Context3DBlendFactor.SOURCE_ALPHA);
             context.setBlendFactors(blendSource, blendDest);
             
-            context.setProgram(Starling.current.getProgram(program));
+			var programTmp:Program3D = Starling.current.getProgram(program);
+			
+            context.setProgram(programTmp);
             context.setTextureAt(1, texture.base);
             context.setVertexBufferAt(0, vertexBuffer, VertexData.POSITION_OFFSET, Context3DVertexBufferFormat.FLOAT_3); 
             context.setVertexBufferAt(1, vertexBuffer, VertexData.COLOR_OFFSET,    Context3DVertexBufferFormat.FLOAT_4);
@@ -250,6 +315,20 @@ package starling.extensions
             context.setVertexBufferAt(0, null);
             context.setVertexBufferAt(1, null);
             context.setVertexBufferAt(2, null);
+        }
+		
+		public function getProgramName(mipMap:Boolean=true, repeat:Boolean=false, smoothing:String=TextureSmoothing.BILINEAR):String
+        {
+            // this method is called very often, so it should return quickly when called with 
+            // the default parameters (no-repeat, mipmap, bilinear)
+            
+            var name:String = "image|";
+            
+            if (!mipMap) name += "N";
+            if (repeat)  name += "R";
+            if (smoothing != TextureSmoothing.BILINEAR) name += smoothing.charAt(0);
+            
+            return name;
         }
 		
 		/* PROPERTIES */
@@ -285,7 +364,8 @@ package starling.extensions
             baseVertexData.setTexCoords(1, 1.0, 0.0);
             baseVertexData.setTexCoords(2, 0.0, 1.0);
             baseVertexData.setTexCoords(3, 1.0, 1.0);
-            defaultVertexData = value.adjustVertexData(baseVertexData);
+			defaultVertexData = baseVertexData.clone();
+            value.adjustVertexData(defaultVertexData, 0, 4);
 		}
 	}
 
