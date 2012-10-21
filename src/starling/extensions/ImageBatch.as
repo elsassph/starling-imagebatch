@@ -190,12 +190,17 @@ package starling.extensions
 			var tex:Texture = texture, itex:Texture;
             var textureWidth:Number = tex.width, textureHeight:Number = tex.height;
 			var data:Vector.<Number> = vertexData.rawData;
+			const EPV:int = VertexData.ELEMENTS_PER_VERTEX;
+			const EPV2:int = VertexData.ELEMENTS_PER_VERTEX * 2;
+			const EPV3:int = VertexData.ELEMENTS_PER_VERTEX * 3;
+			const COL:int = VertexData.COLOR_OFFSET;
+			const TEX:int = VertexData.TEXCOORD_OFFSET;
 			
 			for (var i:int = 0; i < _drawCount; ++i)
             {
                 item = items[i];
 				
-                vOffset = (i << 2) * 9;
+                vOffset = (i << 2) * EPV;
                 x = item.x;
                 y = item.y;
                 s = item.scale;
@@ -221,34 +226,38 @@ package starling.extensions
 							atlasVertexData[itex] = vData;
 						}
 						var tdata:Vector.<Number> = atlasVertexData[itex].rawData;
-						uOffset = vOffset + 7;
-						data[int(uOffset)] = tdata[int(7)];
-						data[int(uOffset + 1)] = tdata[int(8)];
-						data[int(uOffset + 9)] = tdata[int(16)];
-						data[int(uOffset + 10)] = tdata[int(17)];
-						data[int(uOffset + 18)] = tdata[int(25)];
-						data[int(uOffset + 19)] = tdata[int(26)];
-						data[int(uOffset + 27)] = tdata[int(34)];
-						data[int(uOffset + 28)] = tdata[int(35)];
+						uOffset = vOffset + TEX;
+						var tOffset:int = TEX;
+						data[int(uOffset)]     = tdata[int(tOffset)];
+						data[int(uOffset + 1)] = tdata[int(tOffset + 1)];
+						tOffset += EPV;
+						data[int(uOffset + EPV)]     = tdata[int(tOffset)];
+						data[int(uOffset + EPV + 1)] = tdata[int(tOffset + 1)];
+						tOffset += EPV;
+						data[int(uOffset + EPV2)]     = tdata[int(tOffset)];
+						data[int(uOffset + EPV2 + 1)] = tdata[int(tOffset + 1)];
+						tOffset += EPV;
+						data[int(uOffset + EPV3)]     = tdata[int(tOffset)];
+						data[int(uOffset + EPV3 + 1)] = tdata[int(tOffset + 1)];
 					}
 					
 					// color/alpha
-					cOffset = vOffset + 3;
+					cOffset = vOffset + COL;
 					
 					//var k:Number = (premultipliedAlpha ? item.alpha : 1) / 255; <- memory exploding! Oo
 					var k:Number = (premultipliedAlpha ? item.alpha : 1);
 					k /= 255;
 					
-					data[cOffset] = data[int(cOffset + 9)] = data[int(cOffset + 18)] = data[int(cOffset + 27)]
+					data[cOffset] = data[int(cOffset + EPV)] = data[int(cOffset + EPV2)] = data[int(cOffset + EPV3)]
 						= (item.color >> 16) * k;
 					++cOffset;
-					data[cOffset] = data[int(cOffset + 9)] = data[int(cOffset + 18)] = data[int(cOffset + 27)] 
+					data[cOffset] = data[int(cOffset + EPV)] = data[int(cOffset + EPV2)] = data[int(cOffset + EPV3)] 
 						= ((item.color >> 8) & 0xff) * k;
 					++cOffset;
-					data[cOffset] = data[int(cOffset + 9)] = data[int(cOffset + 18)] = data[int(cOffset + 27)] 
+					data[cOffset] = data[int(cOffset + EPV)] = data[int(cOffset + EPV2)] = data[int(cOffset + EPV3)] 
 						= (item.color & 0xff) * k;
 					++cOffset;
-					data[cOffset] = data[int(cOffset + 9)] = data[int(cOffset + 18)] = data[int(cOffset + 27)] 
+					data[cOffset] = data[int(cOffset + EPV)] = data[int(cOffset + EPV2)] = data[int(cOffset + EPV3)] 
 						= item.alpha;
 					++cOffset;
 					item.dirty = 0;
@@ -262,25 +271,25 @@ package starling.extensions
 					ox2 = tw2 * ca - th2 * sa;
 					oy1 = -tw2 * sa + th2 * ca;
 					oy2 = tw2 * sa + th2 * ca;
-					data[int(vOffset)] 		= x - ox1;
-					data[int(vOffset + 1)] 	= y - oy1;
-					data[int(vOffset + 9)] 	= x + ox2;
-					data[int(vOffset + 10)] = y - oy2;
-					data[int(vOffset + 18)] = x - ox2;
-					data[int(vOffset + 19)] = y + oy2;
-					data[int(vOffset + 27)] = x + ox1;
-					data[int(vOffset + 28)] = y + oy1;
+					data[int(vOffset)] 	          = x - ox1;
+					data[int(vOffset + 1)]        = y - oy1;
+					data[int(vOffset + EPV)]      = x + ox2;
+					data[int(vOffset + EPV + 1)]  = y - oy2;
+					data[int(vOffset + EPV2)]     = x - ox2;
+					data[int(vOffset + EPV2 + 1)] = y + oy2;
+					data[int(vOffset + EPV3)]     = x + ox1;
+					data[int(vOffset + EPV3 + 1)] = y + oy1;
 				}
 				else 
 				{
-					data[int(vOffset)] 		= x - tw2;
-					data[int(vOffset + 1)] 	= y - th2;
-					data[int(vOffset + 9)] 	= x + tw2;
-					data[int(vOffset + 10)] = y - th2;
-					data[int(vOffset + 18)] = x - tw2;
-					data[int(vOffset + 19)] = y + th2;
-					data[int(vOffset + 27)] = x + tw2;
-					data[int(vOffset + 28)] = y + th2;
+					data[int(vOffset)]            = x - tw2;
+					data[int(vOffset + 1)] 	      = y - th2;
+					data[int(vOffset + EPV)]      = x + tw2;
+					data[int(vOffset + EPV + 1)]  = y - th2;
+					data[int(vOffset + EPV2)]     = x - tw2;
+					data[int(vOffset + EPV2 + 1)] = y + th2;
+					data[int(vOffset + EPV3)]     = x + tw2;
+					data[int(vOffset + EPV3 + 1)] = y + th2;
 				}
             }
 			
@@ -311,7 +320,7 @@ package starling.extensions
             context.setVertexBufferAt(0, vertexBuffer, VertexData.POSITION_OFFSET, Context3DVertexBufferFormat.FLOAT_3); 
             context.setVertexBufferAt(1, vertexBuffer, VertexData.COLOR_OFFSET,    Context3DVertexBufferFormat.FLOAT_4);
             context.setVertexBufferAt(2, vertexBuffer, VertexData.TEXCOORD_OFFSET, Context3DVertexBufferFormat.FLOAT_2);
-            context.setProgramConstantsFromMatrix(Context3DProgramType.VERTEX, 0, support.mvpMatrix, true);            
+            context.setProgramConstantsFromMatrix(Context3DProgramType.VERTEX, 0, support.mvpMatrix3D, true);            
             context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 0, alphaVector, 1);
             context.drawTriangles(indexBuffer, 0, _drawCount * 2);
             
