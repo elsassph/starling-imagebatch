@@ -19,6 +19,9 @@ independently, and this is a big difference compared to animating a few high-pol
  - (shared) spritesheet support
  - store custom data in items' "tag" property
 
+**Warning:**
+
+Starling TextureAtlas always returns new Texture instances - you must cache them if you manage animations yourself. 
 
 **Important implementation detail:**
 
